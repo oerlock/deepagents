@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from langchain_daytona.sandbox import AsyncDaytonaSandbox
+from langchain_daytona.async_sandbox import AsyncDaytonaSandbox
 
 COMMAND_TIMEOUT_EXIT_CODE = 124
 
@@ -102,11 +102,11 @@ async def test_aexecute_polls_until_exit() -> None:
 
     with (
         patch(
-            "langchain_daytona.sandbox.asyncio.sleep",
+            "langchain_daytona.async_sandbox.asyncio.sleep",
             new_callable=AsyncMock,
         ) as mock_sleep,
         patch(
-            "langchain_daytona.sandbox.time.monotonic",
+            "langchain_daytona.async_sandbox.time.monotonic",
             side_effect=[0.0, 0.0, 0.5, 1.0, 1.5, 2.0],
         ),
     ):
@@ -129,9 +129,9 @@ async def test_aexecute_timeout() -> None:
     mock_sdk.process.delete_session = AsyncMock()
 
     with (
-        patch("langchain_daytona.sandbox.asyncio.sleep", new_callable=AsyncMock),
+        patch("langchain_daytona.async_sandbox.asyncio.sleep", new_callable=AsyncMock),
         patch(
-            "langchain_daytona.sandbox.time.monotonic",
+            "langchain_daytona.async_sandbox.time.monotonic",
             side_effect=[0.0, 0.0, 0.0, 11.0],
         ),
     ):
