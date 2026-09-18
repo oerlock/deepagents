@@ -4,6 +4,8 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 import langchain_daytona
 from langchain_daytona.sandbox import DaytonaSandbox
 
@@ -124,3 +126,42 @@ def test_execute_timeout() -> None:
 
     assert result.exit_code == COMMAND_TIMEOUT_EXIT_CODE
     assert "timed out" in result.output
+
+
+async def test_aexecute_warns_and_delegates_to_sync_path() -> None:
+    sb, mock_sdk = _make_sandbox()
+    mock_sdk.process.execute_session_command.return_value = SimpleNamespace(cmd_id="c1")
+    mock_sdk.process.get_session_command.side_effect = [SimpleNamespace(exit_code=0)]
+    mock_sdk.process.get_session_command_logs.return_value = SimpleNamespace(
+        stdout="hello", stderr=""
+    )
+
+    with pytest.warns(UserWarning, match="AsyncDaytonaSandbox"):
+        result = await sb.aexecute("echo hello")
+
+    assert result.exit_code == 0
+    assert result.output == "hello"
+
+
+async def test_aupload_files_warns_and_delegates_to_sync_path() -> None:
+    sb, mock_sdk = _make_sandbox()
+    mock_sdk.fs.upload_files.return_value = None
+
+    with pytest.warns(UserWarning, match="AsyncDaytonaSandbox"):
+        responses = await sb.aupload_files([("/sandbox/a.txt", b"content")])
+
+    assert responses[0].error is None
+    assert mock_sdk.fs.upload_files.call_count == 1
+
+
+async def test_adownload_files_warns_and_delegates_to_sync_path() -> None:
+    sb, mock_sdk = _make_sandbox()
+    mock_sdk.fs.download_files.return_value = [
+        SimpleNamespace(source="/sandbox/a.txt", result=b"content")
+    ]
+
+    with pytest.warns(UserWarning, match="AsyncDaytonaSandbox"):
+        responses = await sb.adownload_files(["/sandbox/a.txt"])
+
+    assert responses[0].content == b"content"
+    assert mock_sdk.fs.download_files.call_count == 1
